@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>探故知 · 音乐教学</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Segoe UI", sans-serif;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px 20px;
+  color: #333;
+  position: relative;
+}
+
+/* 背景：用你的 cover.JPG 全屏模糊 */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: url("cover.JPG") no-repeat center;
+  background-size: cover;
+  filter: blur(20px);        /* 模糊强度 */
+  transform: scale(1.2);     /* 防止边缘露白 */
+  z-index: -2;
+}
+
+/* 半透明遮罩，让文字更清晰 */
+body::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.35);
+  z-index: -1;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 25px;
+  width: 100%;
+  max-width: 700px;
+}
+.header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.header p {
+  font-size: 1.1rem;
+  opacity: 0.9;
+}
+
+.card {
+  width: 100%;
+  max-width: 700px;
+  background: rgba(255,255,255,0.35);
+  backdrop-filter: blur(12px);
+  border-radius: 24px;
+  padding: 28px 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+  position: relative;
+  overflow: hidden;
+}
+
+.player-left {
+  width: 55%;
+  z-index: 2;
+}
+
+.title-text {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-bottom: 22px;
+}
+
+.progress-container {
+  width: 100%;
+  height: 6px;
+  background: rgba(0,0,0,0.15);
+  border-radius: 3px;
+  cursor: pointer;
+  position: relative;
+  overflow: visible;
+  margin-bottom: 8px;
+}
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  background: #333;
+  border-radius: 3px;
+  position: relative;
+}
+.progress-bar::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translate(50%, -50%);
+  width: 12px;
+  height: 12px;
+  background: #333;
+  border-radius: 50%;
+}
+.time-display {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  margin-bottom: 26px;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 16px;
+}
+.control-btn {
+  background: rgba(0,0,0,0.15);
+  border: none;
+  color: #333;
+  padding: 14px 18px;
+  border-radius: 30px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s ease;
+  font-size: 14px;
+}
+.control-btn:active {
+  background: rgba(0,0,0,0.25);
+}
+.play-btn {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  padding: 0;
+  font-size: 1.6rem;
+}
+
+.popup {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 0;
+  background: rgba(0,0,0,0.7);
+  color: #fff;
+  padding: 12px;
+  border-radius: 12px;
+  width: 220px;
+  display: none;
+  z-index: 10;
+}
+.popup input {
+  width: 100%;
+  margin-top: 6px;
+}
+
+.vinyl-right {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: #1a1a1a;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  z-index: 1;
+}
+.vinyl-cover {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  overflow: hidden;
+  z-index: 2;
+}
+.vinyl-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.vinyl-right > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+@keyframes rotate {
+  from { transform: translateY(-50%) rotate(0deg); }
+  to { transform: translateY(-50%) rotate(360deg); }
+}
+.rotating {
+  animation: rotate 8s linear infinite;
+}
+.stopped {
+  animation: none;
+}
+
+.video-card {
+  width: 100%;
+  max-width: 700px;
+  background: rgba(255,255,255,0.35);
+  backdrop-filter: blur(12px);
+  border-radius: 24px;
+  padding: 28px 24px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+}
+.video-title {
+  font-size: 1.2rem;
+  margin-bottom: 14px;
+  font-weight: 600;
+}
+video {
+  width: 100%;
+  border-radius: 16px;
+  outline: none;
+  background: #000;
+  display: block;
+  aspect-ratio: 16/9;
+  object-fit: cover;
+}
+</style>
+</head>
+
+<body>
+<div class="header">
+  <h1>探故知</h1>
+  <p>工作室教学</p>
+</div>
+
+<div class="card">
+  <div class="player-left">
+    <div class="title-text"><i class="fas fa-music"></i> 探故知 - 伴奏</div>
+
+    <div class="progress-container" id="progressContainer">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <div class="time-display">
+      <span id="currentTime">00:00</span>
+      <span id="duration">--:--</span>
+    </div>
+
+    <div class="controls">
+      <div style="position:relative;">
+        <button class="control-btn" id="tempoBtn">
+          <i class="fas fa-tachometer-alt"></i>
+        </button>
+        <div class="popup" id="tempoPopup">
+          原拍速：75<br>
+          <input type="range" min="50" max="200" value="75" id="tempoRange">
+          <div style="text-align:right;font-size:0.8rem;">
+            当前：<span id="tempoValue">75</span>
+          </div>
+        </div>
+      </div>
+
+      <button class="control-btn play-btn" id="playBtn">
+        <i class="fas fa-play" id="playIcon"></i>
+      </button>
+
+      <button class="control-btn" id="restartBtn">
+        <i class="fas fa-undo"></i>
+      </button>
+
+      <button class="control-btn" id="loopBtn">循环播放</button>
+    </div>
+  </div>
+
+  <div class="vinyl-right stopped" id="vinylDisc">
+    <img src="唱片.PNG" alt="黑胶唱片">
+    <div class="vinyl-cover">
+      <img src="cover.JPG" alt="唱片封面">
+    </div>
+  </div>
+</div>
+
+<div class="video-card">
+  <div class="video-title"><i class="fas fa-video"></i> 教学视频</div>
+  <video controls preload="metadata" src="video.MOV"></video>
+</div>
+
+<script>
+const audio = new Audio("music.mp3");
+audio.preload = "metadata";
+const originalTempo = 75;
+let currentTempo = 75;
+let isPlaying = false;
+let isLoop = true;
+audio.loop = isLoop;
+
+const progressBar = document.getElementById("progressBar");
+const progressContainer = document.getElementById("progressContainer");
+const currentTimeEl = document.getElementById("currentTime");
+const durationEl = document.getElementById("duration");
+const playBtn = document.getElementById("playBtn");
+const playIcon = document.getElementById("playIcon");
+const restartBtn = document.getElementById("restartBtn");
+const tempoBtn = document.getElementById("tempoBtn");
+const tempoPopup = document.getElementById("tempoPopup");
+const tempoRange = document.getElementById("tempoRange");
+const tempoValue = document.getElementById("tempoValue");
+const vinylDisc = document.getElementById("vinylDisc");
+const loopBtn = document.getElementById("loopBtn");
+let isDragging = false;
+
+function format(t) {
+  if (!t || isNaN(t)) return "00:00";
+  const m = String(Math.floor(t / 60)).padStart(2, "0");
+  const s = String(Math.floor(t % 60)).padStart(2, "0");
+  return m + ":" + s;
+}
+
+progressContainer.addEventListener("mousedown", (e) => { isDragging = true; updateProgress(e); });
+window.addEventListener("mouseup", () => isDragging = false);
+progressContainer.addEventListener("mousemove", (e) => { if (isDragging) updateProgress(e); });
+progressContainer.addEventListener("click", (e) => updateProgress(e));
+
+function updateProgress(e) {
+  const rect = progressContainer.getBoundingClientRect();
+  const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  if (audio.duration) audio.currentTime = pos * audio.duration;
+}
+
+loopBtn.onclick = () => {
+  isLoop = !isLoop;
+  audio.loop = isLoop;
+  loopBtn.textContent = isLoop ? "循环播放" : "不循环播放";
+};
+
+playBtn.onclick = () => {
+  if (!isPlaying) {
+    audio.playbackRate = currentTempo / 75;
+    audio.play().then(() => {
+      isPlaying = true;
+      playIcon.className = "fas fa-pause";
+      vinylDisc.classList.remove("stopped");
+      vinylDisc.classList.add("rotating");
+    });
+  } else {
+    audio.pause();
+    isPlaying = false;
+    playIcon.className = "fas fa-play";
+    vinylDisc.classList.remove("rotating");
+    vinylDisc.classList.add("stopped");
+  }
+};
+
+restartBtn.onclick = () => {
+  audio.currentTime = 0;
+  audio.play();
+  isPlaying = true;
+  playIcon.className = "fas fa-pause";
+  vinylDisc.classList.remove("stopped");
+  vinylDisc.classList.add("rotating");
+};
+
+audio.ontimeupdate = () => {
+  if (!isDragging && audio.duration) {
+    progressBar.style.width = (audio.currentTime / audio.duration) * 100 + "%";
+    currentTimeEl.textContent = format(audio.currentTime);
+  }
+};
+
+audio.addEventListener("loadedmetadata", () => {
+  durationEl.textContent = format(audio.duration);
+});
+
+audio.addEventListener("ended", () => {
+  if (!isLoop) {
+    isPlaying = false;
+    playIcon.className = "fas fa-play";
+    vinylDisc.classList.remove("rotating");
+    vinylDisc.classList.add("stopped");
+  }
+});
+
+tempoBtn.onclick = () => {
+  tempoPopup.style.display = tempoPopup.style.display === "block" ? "none" : "block";
+};
+tempoRange.oninput = () => {
+  currentTempo = tempoRange.value;
+  tempoValue.textContent = currentTempo;
+  if (isPlaying) audio.playbackRate = currentTempo / 75;
+  const base = 8;
+  const nd = base * (75 / currentTempo);
+  vinylDisc.style.animation = "none";
+  vinylDisc.offsetHeight;
+  vinylDisc.style.animation = `rotate ${nd}s linear infinite`;
+};
+</script>
+</body>
+</html>
